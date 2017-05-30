@@ -15,10 +15,13 @@ public class RestClient {
     }
 
     public HttpResponse GetRequest(HttpUriRequest httpUriRequest) {
+        HttpResponse response = null;
         try {
-            return client.execute(httpUriRequest);
+            response = client.execute(httpUriRequest);
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        return response;
     }
 }

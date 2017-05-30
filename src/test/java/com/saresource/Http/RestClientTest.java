@@ -1,8 +1,10 @@
 package com.saresource.Http;
 
-import junit.framework.TestCase;
+import org.junit.Test;
 
-public class RestClientTest extends TestCase {
-    public void testGetRequest() throws Exception {
+public class RestClientTest {
+    @Test
+    public void testGetRequest() {
+        System.out.println("Hello Rob.");
     }
 }
