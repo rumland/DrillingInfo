@@ -6,16 +6,19 @@ import com.amazonaws.services.redshift.AmazonRedshiftClientBuilder;
 import com.amazonaws.services.redshift.model.*;
 import com.saresource.aws.beans.Identification;
 import com.saresource.aws.beans.InformationSchemaTables;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 
-public class LearnAwsRedshiftTest {
+import java.util.concurrent.TimeUnit;
+
+public class LearnAwsRedshiftIT {
     private AmazonRedshift client;
     private final String dbUrl = "jdbc:redshift://sa-resources-drilling-info.cecvv6wdkflt.us-east-1.redshift.amazonaws.com:5439/drillinginfo";
     private final String masterUserName = "rumland";
-    private final String masterUserPassword = "Need to correctly set";
-    private final AwsRedshiftDatabseIO dbIo = new AwsRedshiftDatabseIO(dbUrl, masterUserName, masterUserPassword);
+    private final String masterUserPassword = "Need to set...";
+    private final AwsRedshiftDatabaseIO dbIo = new AwsRedshiftDatabaseIO(dbUrl, masterUserName, masterUserPassword);
 
     @Before
     public void setUp() throws Exception {
@@ -45,6 +48,16 @@ public class LearnAwsRedshiftTest {
         System.out.println("Returned index? " + i);
         i = dbIo.updateQuery("insert into identification values ('Alyssa', 'Umland', 'October 6, 2014');");
         System.out.println("Returned index? " + i);
+    }
+
+    @Test
+    public void getDatabaseConnectionThroughClientTest() {
+        String clusterIdentifier = "sa-resources-drilling-info";
+        DescribeClustersResult result = client.describeClusters(new DescribeClustersRequest()
+                .withClusterIdentifier(clusterIdentifier));
+        Assert.assertEquals(1, result.getClusters().size());
+        String status = (result.getClusters()).get(0).getClusterStatus();
+        System.out.println("Status: " + status);
     }
 
     @Test
@@ -92,7 +105,7 @@ public class LearnAwsRedshiftTest {
         System.out.println("Waiting for cluster to be deleted.");
         while (clusterExists(clusterIdentifier)) {
             try {
-                Thread.sleep(20*1000);
+                TimeUnit.SECONDS.sleep(20);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
@@ -112,7 +125,7 @@ public class LearnAwsRedshiftTest {
             else {
                 System.out.print(".");
                 try {
-                    Thread.sleep(20*1000);
+                    TimeUnit.SECONDS.sleep(20);
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }

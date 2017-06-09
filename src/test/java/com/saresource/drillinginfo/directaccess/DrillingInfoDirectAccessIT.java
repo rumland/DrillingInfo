@@ -7,7 +7,7 @@ import org.junit.Test;
 import java.util.Collection;
 
 public class DrillingInfoDirectAccessIT {
-    private final String API_KEY = "Need to manually set...";
+    private final String API_KEY = "Need to set...";
 
     @Test
     public void getCoProductionHeadersTest() {
