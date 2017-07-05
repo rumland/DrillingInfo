@@ -9,7 +9,7 @@ import java.io.IOException;
 import java.util.Collection;
 
 public class DrillingInfoDirectAccessTest {
-    private final String API_KEY = "Need to manually set...";
+    private final String API_KEY = System.getenv("DRILLING_INFO_API_KEY");
 
     @Test
     public void parseProductionHeadersTest() throws IOException {
@@ -28,31 +28,31 @@ public class DrillingInfoDirectAccessTest {
         Assert.assertEquals("PICEANCE", productionHeader.getBasin());
         Assert.assertEquals("USA", productionHeader.getCountry());
         Assert.assertEquals("MESA (CO)", productionHeader.getCounty_state());
-        Assert.assertEquals("0", productionHeader.getCum_bcfge());
-        Assert.assertEquals("182425", productionHeader.getCum_gas());
-        Assert.assertEquals("182", productionHeader.getCum_mmcfge());
-        Assert.assertEquals("0", productionHeader.getCum_oil());
-        Assert.assertEquals("3357", productionHeader.getCum_water());
+        Assert.assertEquals(0, productionHeader.getCum_bcfge());
+        Assert.assertEquals(182425, productionHeader.getCum_gas());
+        Assert.assertEquals(182, productionHeader.getCum_mmcfge());
+        Assert.assertEquals(0, productionHeader.getCum_oil());
+        Assert.assertEquals(3357, productionHeader.getCum_water());
         Assert.assertEquals("BLACK HILLS PLATEAU PRODUCTION LLC", productionHeader.getCurrent_operator());
         Assert.assertEquals("MESA", productionHeader.getCounty_parish());
         Assert.assertEquals("SI", productionHeader.getCurrent_producing_status());
-        Assert.assertEquals("0", productionHeader.getDaily_gas());
-        Assert.assertEquals("0", productionHeader.getDaily_oil());
+        Assert.assertEquals(0, productionHeader.getDaily_gas());
+        Assert.assertEquals(0, productionHeader.getDaily_oil());
         Assert.assertEquals("(N/A)", productionHeader.getDistrict());
-        Assert.assertEquals("104216412", productionHeader.getEntity_id());
-        Assert.assertEquals("39.2476369", productionHeader.getEntity_latitude());
-        Assert.assertEquals("-108.239037", productionHeader.getEntity_longitude());
+        Assert.assertEquals(104216412, productionHeader.getEntity_id());
+        Assert.assertEquals("39.2476369", String.valueOf(productionHeader.getEntity_latitude()));
+        Assert.assertEquals("-108.239037", String.valueOf(productionHeader.getEntity_longitude()));
         Assert.assertEquals("WELL", productionHeader.getEntity_type());
         Assert.assertEquals("SHIRE GULCH", productionHeader.getField());
-        Assert.assertEquals("1965", productionHeader.getFirst_6_boe());
-        Assert.assertEquals("11792", productionHeader.getFirst_6_gas());
-        Assert.assertEquals("0", productionHeader.getFirst_6_oil());
-        Assert.assertEquals("90", productionHeader.getFirst_6_water());
-        Assert.assertEquals("4073", productionHeader.getFirst_12_boe());
-        Assert.assertEquals("24441", productionHeader.getFirst_12_gas());
-        Assert.assertEquals("24", productionHeader.getFirst_12_mmcfge());
-        Assert.assertEquals("0", productionHeader.getFirst_12_oil());
-        Assert.assertEquals("166", productionHeader.getFirst_12_water());
+        Assert.assertEquals(1965, productionHeader.getFirst_6_boe());
+        Assert.assertEquals(11792, productionHeader.getFirst_6_gas());
+        Assert.assertEquals(0, productionHeader.getFirst_6_oil());
+        Assert.assertEquals(90, productionHeader.getFirst_6_water());
+        Assert.assertEquals(4073, productionHeader.getFirst_12_boe());
+        Assert.assertEquals(24441, productionHeader.getFirst_12_gas());
+        Assert.assertEquals(24, productionHeader.getFirst_12_mmcfge());
+        Assert.assertEquals(0, productionHeader.getFirst_12_oil());
+        Assert.assertEquals(166, productionHeader.getFirst_12_water());
         Assert.assertEquals("HORSESHOE CANYON", productionHeader.getLease_name());
     }
 }

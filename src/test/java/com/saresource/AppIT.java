@@ -11,18 +11,12 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class AppIT {
-    private final String DRILLING_INFO_API_KEY = "Need to set...";
+    private final String DRILLING_INFO_API_KEY = System.getenv("DRILLING_INFO_API_KEY");
     private final DrillingInfoDirectAccess diDa = new DrillingInfoDirectAccess(DRILLING_INFO_API_KEY);
-
-    private final String dbUrl = "jdbc:redshift://sa-resources-drilling-info.cecvv6wdkflt.us-east-1.redshift.amazonaws.com:5439/drillinginfo";
-    private final String masterUserName = "rumland";
-    private final String masterUserPassword = "Need to set...";
-    private final AwsRedshiftDatabaseIO dbIo = new AwsRedshiftDatabaseIO(dbUrl, masterUserName, masterUserPassword);
+    private final AwsRedshiftDatabaseIO dbIo = AwsRedshiftDatabaseIO.build();
 
     @Test
     public void drillingInfoLoadedIntoRedshiftTest() {

@@ -14,16 +14,13 @@ import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import java.util.concurrent.TimeUnit;
 
 public class LearnAwsRedshiftIT {
+    private AwsRedshiftDatabaseIO dbIo;
     private AmazonRedshift client;
-    private final String dbUrl = "jdbc:redshift://sa-resources-drilling-info.cecvv6wdkflt.us-east-1.redshift.amazonaws.com:5439/drillinginfo";
-    private final String masterUserName = "rumland";
-    private final String masterUserPassword = "Need to set...";
-    private final AwsRedshiftDatabaseIO dbIo = new AwsRedshiftDatabaseIO(dbUrl, masterUserName, masterUserPassword);
 
     @Before
     public void setUp() throws Exception {
-        AmazonRedshiftClientBuilder clientBuilder = AmazonRedshiftClientBuilder.standard().withRegion(Regions.US_WEST_1);
-        client = clientBuilder.build();
+        dbIo = AwsRedshiftDatabaseIO.build();
+        client =  AmazonRedshiftClientBuilder.standard().withRegion(Regions.US_EAST_1).build();
     }
 
     @Test

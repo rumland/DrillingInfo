@@ -39,7 +39,10 @@ public class DrillingInfoDirectAccess {
      * @return all production headers for state or province
      */
     public Collection<ProductionHeader> getProductionHeaders(String stateOrProvince) {
-        final int headerLimit = 90000;
+        return getProductionHeaders(stateOrProvince, 90000);
+    }
+
+    Collection<ProductionHeader> getProductionHeaders(String stateOrProvince, int headerLimit) {
         Collection<ProductionHeader> allProductionHeaders = new ArrayList<>();
         int page = 1;
 
