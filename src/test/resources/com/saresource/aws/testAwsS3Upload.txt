@@ -1,0 +1,1 @@
+I am a test file to be uploaded to Amazon Web Services S3.
