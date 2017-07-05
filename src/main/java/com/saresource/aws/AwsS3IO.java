@@ -11,8 +11,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.List;
 
 class AwsS3IO {
     final private AmazonS3 s3Client;
@@ -38,54 +36,16 @@ class AwsS3IO {
         return data;
     }
 
-    void upload(String existingBucketName, String newFileName, File file) {
+    void upload(String bucketName, String newFileName, File file) {
+        s3Client.putObject(new PutObjectRequest(bucketName, newFileName, file));
+    }
 
-        // Create a list of UploadPartResponse objects. You get one of these
-        // for each part upload.
-        List<PartETag> partETags = new ArrayList<>();
-
-        // Step 1: Initialize.
-        InitiateMultipartUploadRequest initRequest = new InitiateMultipartUploadRequest(existingBucketName, newFileName);
-        InitiateMultipartUploadResult initResponse = s3Client.initiateMultipartUpload(initRequest);
-
-        long contentLength = file.length();
-        long partSize = 5242880; // Set part size to 5 MB.
-
-        try {
-            // Step 2: Upload parts.
-            long filePosition = 0;
-            for (int i = 1; filePosition < contentLength; i++) {
-                // Last part can be less than 5 MB. Adjust part size.
-                partSize = Math.min(partSize, (contentLength - filePosition));
-
-                // Create request to upload a part.
-                UploadPartRequest uploadRequest = new UploadPartRequest()
-                        .withBucketName(existingBucketName).withKey(newFileName)
-                        .withUploadId(initResponse.getUploadId()).withPartNumber(i)
-                        .withFileOffset(filePosition)
-                        .withFile(file)
-                        .withPartSize(partSize);
-
-                // Upload part and add response to our list.
-                partETags.add(
-                        s3Client.uploadPart(uploadRequest).getPartETag());
-
-                filePosition += partSize;
-            }
-
-            // Step 3: Complete.
-            CompleteMultipartUploadRequest compRequest = new
-                    CompleteMultipartUploadRequest(
-                    existingBucketName,
-                    newFileName,
-                    initResponse.getUploadId(),
-                    partETags);
-
-            s3Client.completeMultipartUpload(compRequest);
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
-            s3Client.abortMultipartUpload(new AbortMultipartUploadRequest(
-                    existingBucketName, newFileName, initResponse.getUploadId()));
-        }
+    /**
+     * Delete file from S3 bucket.
+     * @param bucketName Bucket to delete files from
+     * @param fileToDelete Name of file to delete
+     */
+    void delete(String bucketName, String fileToDelete) {
+        s3Client.deleteObject(new DeleteObjectRequest(bucketName, fileToDelete));
     }
 }

@@ -12,7 +12,7 @@ import java.nio.charset.Charset;
 
 public class LearnAwsS3IT {
     @Test
-    public void uploadFileTest() throws IOException {
+    public void fileIoTest() throws IOException {
 
         final String existingBucketName = "sa-resources-s3-bucket/drilling-info/load";
         final File file = new File(this.getClass().getResource("testAwsS3Upload.txt").getPath());
@@ -29,5 +29,7 @@ public class LearnAwsS3IT {
         System.out.println("Expected content: " + expectedContent);
 
         Assert.assertEquals("S3 content should match test content", expectedContent, s3content);
+
+        s3IO.delete(existingBucketName, newFileName);
     }
 }
