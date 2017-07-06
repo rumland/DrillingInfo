@@ -1,12 +1,20 @@
 package com.saresource;
 
+import com.amazonaws.regions.Regions;
 import com.saresource.aws.AwsRedshiftDatabaseIO;
+import com.saresource.aws.AwsS3IO;
 import com.saresource.drillinginfo.directaccess.DrillingInfoDirectAccess;
 import com.saresource.drillinginfo.directaccess.pojo.v1.ProductionHeader;
+import org.apache.commons.codec.Charsets;
 import org.apache.commons.lang3.time.StopWatch;
 import org.junit.Test;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -17,6 +25,30 @@ public class AppIT {
     private final String DRILLING_INFO_API_KEY = System.getenv("DRILLING_INFO_API_KEY");
     private final DrillingInfoDirectAccess diDa = new DrillingInfoDirectAccess(DRILLING_INFO_API_KEY);
     private final AwsRedshiftDatabaseIO dbIo = AwsRedshiftDatabaseIO.build();
+
+    @Test
+    public void createS3ContentToCopyTest() throws IOException {
+        List<ProductionHeader> headers = new ArrayList<>(diDa.getProductionHeaders("CO", 10));
+
+        Path path = Files.createTempFile("headersPipeDelimited", ".txt");
+        File file = path.toFile();
+        file.deleteOnExit();
+        headers.forEach(productionHeader -> {
+            try {
+                Files.write(path,
+                        (productionHeader.toString() + System.lineSeparator()).getBytes(Charsets.UTF_8),
+                        StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
+
+        AwsS3IO s3IO = new AwsS3IO(Regions.US_EAST_1);
+        final String existingBucketName = "sa-resources-s3-bucket/drilling-info/load";
+        final String newFileName = file.getName();
+
+        s3IO.upload(existingBucketName, newFileName, file);
+    }
 
     @Test
     public void drillingInfoLoadedIntoRedshiftTest() {

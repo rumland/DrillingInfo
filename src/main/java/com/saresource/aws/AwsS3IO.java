@@ -12,10 +12,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 
-class AwsS3IO {
+public class AwsS3IO {
     final private AmazonS3 s3Client;
 
-    AwsS3IO(Regions region) {
+    public AwsS3IO(Regions region) {
         s3Client = AmazonS3ClientBuilder.standard()
                 .withCredentials(new EnvironmentVariableCredentialsProvider())
                 .withRegion(region).build();
@@ -36,7 +36,7 @@ class AwsS3IO {
         return data;
     }
 
-    void upload(String bucketName, String newFileName, File file) {
+    public void upload(String bucketName, String newFileName, File file) {
         s3Client.putObject(new PutObjectRequest(bucketName, newFileName, file));
     }
 
