@@ -52,7 +52,7 @@ public class AwsRedshiftDatabaseIO {
         return jdbcTemplate.query(query, beanPropertyRowMapper);
     }
 
-    int updateQuery(String query) {
+    public int updateQuery(String query) {
         return jdbcTemplate.update(query);
     }
 

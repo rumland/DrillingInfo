@@ -3,6 +3,7 @@ package com.saresource.drillinginfo.directaccess;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.saresource.drillinginfo.directaccess.pojo.v1.ProductionHeader;
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
@@ -15,6 +16,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class DrillingInfoDirectAccess {
@@ -67,11 +69,17 @@ public class DrillingInfoDirectAccess {
     }
 
     private Collection<ProductionHeader> getProductionHeadersPage(String url) {
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
         try {
+            StopWatch httpGetStopWatch = new StopWatch();
+            httpGetStopWatch.start();
             HttpGet get = new HttpGet(url);
             get.setHeader("X-API-KEY", API_KEY);
             get.setHeader("Connection", "close");
             HttpResponse response = client.execute(get);
+            httpGetStopWatch.stop();
+            System.out.println("HTTP get took: " + httpGetStopWatch);
             int statusCode = response.getStatusLine().getStatusCode();
             if (statusCode != HttpStatus.SC_OK) {
                 String message = String.format("Failed to issue request (%s:%s)", url, statusCode);
@@ -92,7 +100,12 @@ public class DrillingInfoDirectAccess {
             String json = EntityUtils.toString(entity);
             get.releaseConnection();
             EntityUtils.consume(entity);
-            return parseJson(json);
+            Collection<ProductionHeader> productionHeaders = parseJson(json);
+            stopWatch.stop();
+
+            System.out.println("Took: " + stopWatch + " to get " + productionHeaders.size() + " production headers.");
+
+            return productionHeaders;
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -100,8 +113,13 @@ public class DrillingInfoDirectAccess {
 
     Collection<ProductionHeader> parseJson(String json) {
         try {
+            StopWatch stopWatch = new StopWatch();
+            stopWatch.start();
             ProductionHeader[] productionHeaders = mapper.readValue(json, ProductionHeader[].class);
-            return Arrays.asList(productionHeaders);
+            List<ProductionHeader> headers = Arrays.asList(productionHeaders);
+            stopWatch.stop();
+            System.out.println("Took: " + stopWatch + " to parse json into Collection<ProductionHeader>.");
+            return headers;
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

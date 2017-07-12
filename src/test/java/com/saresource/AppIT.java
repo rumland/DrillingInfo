@@ -12,6 +12,9 @@ import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -48,6 +51,75 @@ public class AppIT {
         final String newFileName = file.getName();
 
         s3IO.upload(existingBucketName, newFileName, file);
+    }
+
+    @Test
+    public void copyS3DataIntoRedshiftTest() {
+        String query = "copy production_headers_2 from " +
+                "'s3://sa-resources-s3-bucket/drilling-info/load' iam_role " +
+                "'arn:aws:iam::673800128558:role/s3-to-redshift'";
+
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
+        int updateQuery = dbIo.updateQuery(query);
+        stopWatch.stop();
+        System.out.println("Copy took: " + stopWatch);
+        System.out.println("Query result: " + updateQuery);
+    }
+
+    @Test
+    public void drillingInfoLoadedIntoS3ThenRedshiftTest() throws IOException {
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
+        List<ProductionHeader> headers = new ArrayList<>(diDa.getProductionHeaders("CO"));
+        stopWatch.stop();
+        System.out.println("Getting " + headers.size() + " from Drilling Info headers took: " + stopWatch);
+
+        stopWatch.reset();
+        stopWatch.start();
+        Path path = Files.createTempFile("headersPipeDelimited", ".txt");
+        File file = path.toFile();
+        FileChannel rwChannel = new RandomAccessFile(file.getName(), "rw").getChannel();
+        file.deleteOnExit();
+        headers.forEach(productionHeader -> {
+            byte[] buffer = (productionHeader.toString() + System.lineSeparator()).getBytes();
+            ByteBuffer wrBuf;
+            try {
+                wrBuf = rwChannel.map(FileChannel.MapMode.READ_WRITE, 0, buffer.length);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            wrBuf.put(buffer);
+//            try {
+//                Files.write(path,
+//                        (productionHeader.toString() + System.lineSeparator()).getBytes(Charsets.UTF_8),
+//                        StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+//            } catch (IOException e) {
+//                throw new RuntimeException(e);
+//            }
+        });
+        stopWatch.stop();
+        System.out.println("Creating temporary data file took: " + stopWatch);
+
+        stopWatch.reset();
+        stopWatch.start();
+        AwsS3IO s3IO = new AwsS3IO(Regions.US_EAST_1);
+        final String existingBucketName = "sa-resources-s3-bucket/drilling-info/load";
+        final String newFileName = file.getName();
+        s3IO.upload(existingBucketName, newFileName, file);
+        stopWatch.stop();
+        System.out.println("Uploading temporary data file to S3 took: " + stopWatch);
+
+        String query = "copy production_headers_2 from " +
+                "'s3://sa-resources-s3-bucket/drilling-info/load' iam_role " +
+                "'arn:aws:iam::673800128558:role/s3-to-redshift'";
+
+        stopWatch.reset();
+        stopWatch.start();
+        int updateQuery = dbIo.updateQuery(query);
+        stopWatch.stop();
+        System.out.println("Copy from S3 to Redshift took: " + stopWatch);
+        System.out.println("Copy query result: " + updateQuery);
     }
 
     @Test
