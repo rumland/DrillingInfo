@@ -25,13 +25,12 @@ import java.util.Arrays;
 import java.util.List;
 
 public class AppIT {
-    private final String DRILLING_INFO_API_KEY = System.getenv("DRILLING_INFO_API_KEY");
-    private final DrillingInfoDirectAccess diDa = new DrillingInfoDirectAccess(DRILLING_INFO_API_KEY);
+    private final DrillingInfoDirectAccess diDa = new DrillingInfoDirectAccess();
     private final AwsRedshiftDatabaseIO dbIo = AwsRedshiftDatabaseIO.build();
 
     @Test
     public void createS3ContentToCopyTest() throws IOException {
-        List<ProductionHeader> headers = new ArrayList<>(diDa.getProductionHeaders("CO", 10));
+        List<ProductionHeader> headers = new ArrayList<>(diDa.getProductionHeaders("CO"));
 
         Path path = Files.createTempFile("headersPipeDelimited", ".txt");
         File file = path.toFile();

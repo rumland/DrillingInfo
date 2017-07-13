@@ -8,15 +8,13 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.Collection;
 
-public class DrillingInfoDirectAccessTest {
-    private final String API_KEY = System.getenv("DRILLING_INFO_API_KEY");
-
+public class GetProductionHeadersPageTest {
     @Test
     public void parseProductionHeadersTest() throws IOException {
         String json = IOUtils.toString(this.getClass().getResourceAsStream("productionHeader.json"));
 
-        DrillingInfoDirectAccess drillingInfoDirectAccess = new DrillingInfoDirectAccess(API_KEY);
-        Collection<ProductionHeader> productionHeaders = drillingInfoDirectAccess.parseJson(json);
+        GetProductionHeadersPage getProductionHeadersPage = new GetProductionHeadersPage("URL");
+        Collection<ProductionHeader> productionHeaders = getProductionHeadersPage.parseJson(json);
 
         Assert.assertEquals("1 production header expected", 1, productionHeaders.size());
         ProductionHeader productionHeader = productionHeaders.iterator().next();
