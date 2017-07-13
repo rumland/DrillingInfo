@@ -1,6 +1,7 @@
 package com.saresource.drillinginfo.directaccess;
 
 import com.saresource.drillinginfo.directaccess.pojo.v1.ProductionHeader;
+import com.saresource.drillinginfo.directaccess.pojo.v1.RigAnalytics;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -13,9 +14,11 @@ public class DrillingInfoDirectAccess {
     private final String baseUrl = "https://di-api.drillinginfo.com/v1/direct-access";
     private final String productionHeaderUrlFormat = String.format("%s/%s",
             baseUrl, "producing-entities?state_province=%s&format=json&page=%s&pagesize=%s&current_producing_status=ACTIVE");
+    private final String rigAnalyticsUrlFormat = String.format("%s/%s",
+            baseUrl, "rig-jobs?state=%s&format=json&page=%s&pagesize=%s");
 
     /**
-     * Get production headers for state or providence 100 at a time. For time being, limit to N headers.
+     * Get production headers for state or providence.
      *
      * @param stateOrProvince to get production headers for
      * @return all production headers for state or province
@@ -60,4 +63,51 @@ public class DrillingInfoDirectAccess {
 
         return allProductionHeaders;
    }
+
+    /**
+     * Get rig analytics for state or providence.
+     *
+     * @param stateOrProvince to get rig analytics for
+     * @return all rig analytics for state or province
+     */
+    public Collection<RigAnalytics> getRigAnalytics(String stateOrProvince) {
+        Collection<RigAnalytics> allRigAnalytics = new ArrayList<>();
+
+        boolean keepGoing = true;
+        int page = 1;
+        int batchSize = 5;
+        int PAGE_SIZE = 10000;
+        while (keepGoing) {
+            List<Callable<Collection<RigAnalytics>>> callables = new ArrayList<>();
+            for (int cnt = 1; cnt <= batchSize; ++cnt) {
+                String url = String.format(rigAnalyticsUrlFormat, stateOrProvince, page, PAGE_SIZE);
+                callables.add(new GetRigAnalyticsPage(url));
+                ++page;
+            }
+
+            try {
+                ExecutorService executor = Executors.newFixedThreadPool(batchSize);
+                Collection<RigAnalytics> newRigAnalytics = new ArrayList<>();
+                executor.invokeAll(callables)
+                        .stream()
+                        .map(future ->
+                        {
+                            try {
+                                return future.get();
+                            } catch (Exception e) {
+                                throw new RuntimeException(e);
+                            }
+                        }).forEach(newRigAnalytics::addAll);
+                allRigAnalytics.addAll(newRigAnalytics);
+
+                if (newRigAnalytics.size() != PAGE_SIZE * batchSize) {
+                    keepGoing = false;
+                }
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        return allRigAnalytics;
+    }
 }

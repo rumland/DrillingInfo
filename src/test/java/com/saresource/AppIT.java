@@ -5,16 +5,16 @@ import com.saresource.aws.AwsRedshiftDatabaseIO;
 import com.saresource.aws.AwsS3IO;
 import com.saresource.drillinginfo.directaccess.DrillingInfoDirectAccess;
 import com.saresource.drillinginfo.directaccess.pojo.v1.ProductionHeader;
+import com.saresource.drillinginfo.directaccess.pojo.v1.RigAnalytics;
 import org.apache.commons.codec.Charsets;
 import org.apache.commons.lang3.time.StopWatch;
 import org.junit.Test;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -54,7 +54,7 @@ public class AppIT {
 
     @Test
     public void copyS3DataIntoRedshiftTest() {
-        String query = "copy production_headers_2 from " +
+        String query = "copy production_headers from " +
                 "'s3://sa-resources-s3-bucket/drilling-info/load' iam_role " +
                 "'arn:aws:iam::673800128558:role/s3-to-redshift'";
 
@@ -67,54 +67,149 @@ public class AppIT {
     }
 
     @Test
-    public void drillingInfoLoadedIntoS3ThenRedshiftTest() throws IOException {
+    public void drillingInfoLoadedIntoS3ThenRedshiftTest() {
+        processProductionHeaders();
+        processRigAnalytics();
+    }
+
+    private void processProductionHeaders() {
+        List<ProductionHeader> headers = getDrillingInfoProductionHeaders();
+        File file = writeProductionHeadersToFile("headersPipeDelimited", headers);
+        copyFileToAwsS3(file);
+        copyAwsS3FileToRedshift("production_headers", file.getName());
+    }
+
+    private void processRigAnalytics() {
+        List<RigAnalytics> analytics = getDrillingInfoRigAnalytics();
+        File file = writeRigAnalyticsToFile("analyticsPipeDelimited", analytics);
+        copyFileToAwsS3(file);
+        copyAwsS3FileToRedshift("rig_analytics", file.getName());
+    }
+
+    private List<ProductionHeader> getDrillingInfoProductionHeaders() {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
         List<ProductionHeader> headers = new ArrayList<>(diDa.getProductionHeaders("CO"));
         stopWatch.stop();
         System.out.println("Getting " + headers.size() + " from Drilling Info headers took: " + stopWatch);
+        return headers;
+    }
 
-        stopWatch.reset();
+    private List<RigAnalytics> getDrillingInfoRigAnalytics() {
+        StopWatch stopWatch = new StopWatch();
         stopWatch.start();
-        Path path = Files.createTempFile("headersPipeDelimited", ".txt");
-        File file = path.toFile();
-        FileChannel rwChannel = new RandomAccessFile(file.getName(), "rw").getChannel();
-        file.deleteOnExit();
-        headers.forEach(productionHeader -> {
-            byte[] buffer = (productionHeader.toString() + System.lineSeparator()).getBytes();
-            ByteBuffer wrBuf;
-            try {
-                wrBuf = rwChannel.map(FileChannel.MapMode.READ_WRITE, 0, buffer.length);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-            wrBuf.put(buffer);
-//            try {
-//                Files.write(path,
-//                        (productionHeader.toString() + System.lineSeparator()).getBytes(Charsets.UTF_8),
-//                        StandardOpenOption.CREATE, StandardOpenOption.APPEND);
-//            } catch (IOException e) {
-//                throw new RuntimeException(e);
-//            }
-        });
+        List<RigAnalytics> analytics = new ArrayList<>(diDa.getRigAnalytics("Colorado"));
         stopWatch.stop();
-        System.out.println("Creating temporary data file took: " + stopWatch);
+        System.out.println("Getting " + analytics.size() + " from Drilling Info analytics took: " + stopWatch);
+        return analytics;
+    }
 
-        stopWatch.reset();
-        stopWatch.start();
+    private File writeProductionHeadersToFile(String prefix, List<ProductionHeader> headers) {
+        StopWatch fileStopWatch = new StopWatch();
+        fileStopWatch.reset();
+        fileStopWatch.start();
+        Path path;
+        try {
+            path = Files.createTempFile(prefix, ".txt");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        File file = path.toFile();
+        FileWriter fr = null;
+        BufferedWriter br = null;
+        try {
+            fr = new FileWriter(file);
+            br = new BufferedWriter(fr);
+            for (ProductionHeader header : headers) {
+                String dataWithNewLine = header.toString() + System.lineSeparator();
+                try {
+                    br.write(dataWithNewLine);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (br != null) {
+                    br.close();
+                }
+                if (fr != null) {
+                    fr.close();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        fileStopWatch.stop();
+        System.out.println("Creating temporary data file took: " + fileStopWatch);
+        return file;
+    }
+
+    private File writeRigAnalyticsToFile(String prefix, List<RigAnalytics> analytics) {
+        StopWatch fileStopWatch = new StopWatch();
+        fileStopWatch.reset();
+        fileStopWatch.start();
+        Path path;
+        try {
+            path = Files.createTempFile(prefix, ".txt");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        File file = path.toFile();
+        FileWriter fr = null;
+        BufferedWriter br = null;
+        try {
+            fr = new FileWriter(file);
+            br = new BufferedWriter(fr);
+            for (RigAnalytics analytic : analytics) {
+                String dataWithNewLine = analytic.toString() + System.lineSeparator();
+                try {
+                    br.write(dataWithNewLine);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (br != null) {
+                    br.close();
+                }
+                if (fr != null) {
+                    fr.close();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        fileStopWatch.stop();
+        System.out.println("Creating temporary data file took: " + fileStopWatch);
+        return file;
+    }
+
+    private void copyFileToAwsS3(File file) {
+        StopWatch s3StopWatch = new StopWatch();
+        s3StopWatch.reset();
+        s3StopWatch.start();
         AwsS3IO s3IO = new AwsS3IO(Regions.US_EAST_1);
         final String existingBucketName = "sa-resources-s3-bucket/drilling-info/load";
         final String newFileName = file.getName();
         s3IO.upload(existingBucketName, newFileName, file);
-        stopWatch.stop();
-        System.out.println("Uploading temporary data file to S3 took: " + stopWatch);
+        s3StopWatch.stop();
+        System.out.println("Uploading temporary data file to S3 took: " + s3StopWatch);
+    }
 
-        String query = "copy production_headers_2 from " +
-                "'s3://sa-resources-s3-bucket/drilling-info/load' iam_role " +
-                "'arn:aws:iam::673800128558:role/s3-to-redshift'";
+    private void copyAwsS3FileToRedshift(String tableName, String fileName) {
+        String query = String.format("copy %s from 's3://sa-resources-s3-bucket/drilling-info/load/%s' " +
+                "iam_role 'arn:aws:iam::673800128558:role/s3-to-redshift'", tableName, fileName);
 
+        StopWatch stopWatch = new StopWatch();
         stopWatch.reset();
         stopWatch.start();
+        System.out.println("Query: " + query);
         int updateQuery = dbIo.updateQuery(query);
         stopWatch.stop();
         System.out.println("Copy from S3 to Redshift took: " + stopWatch);
@@ -132,7 +227,7 @@ public class AppIT {
 //        dbIo.updateQuery("insert into production_headers (id, entity_type, entity_id, district) " +
 //                "values (2, 'test entity type 2', 4, 'test district 2')");
 
-        int[] ints = dbIo.batchUpdateQuery("insert into production_headers_2 " +
+        int[] ints = dbIo.batchUpdateQuery("insert into production_headers " +
                 "(id, entity_id, district, entity_type, prod_type, state_province, country, " +
                 "lease_name, api_uwi, initial_completion_date, field, reservoir, regulatory_number, " +
                 "county_parish, well_number, current_operator, oil_gatherer, gas_gatherer, " +
