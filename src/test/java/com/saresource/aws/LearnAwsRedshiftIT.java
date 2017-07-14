@@ -25,7 +25,7 @@ public class LearnAwsRedshiftIT {
 
     @Test
     public void listRedShiftDatabaseTablesTest() {
-        dbIo.executeQuery("select * from information_schema.tables;",
+        dbIo.runQuery("select * from information_schema.tables;",
                 new BeanPropertyRowMapper<>(InformationSchemaTables.class)).forEach(ist ->
             System.out.println(String.format("Catalog: %s; Name: %s", ist.getTable_catalog(), ist.getTable_name()))
         );
@@ -33,7 +33,7 @@ public class LearnAwsRedshiftIT {
 
     @Test
     public void listIdentificationRecordsTest() {
-        dbIo.executeQuery("select * from identification;",
+        dbIo.runQuery("select * from identification;",
                 new BeanPropertyRowMapper<>(Identification.class)).forEach(id ->
                 System.out.println(String.format("First: %s; Last: %s; Birthdate: %s", id.getFirst(), id.getLast(), id.getBirthdate()))
         );

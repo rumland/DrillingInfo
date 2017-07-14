@@ -48,8 +48,12 @@ public class AwsRedshiftDatabaseIO {
         jdbcTemplate = new JdbcTemplate(dataSource);
     }
 
-    <T> List<T> executeQuery(String query, BeanPropertyRowMapper<T> beanPropertyRowMapper) {
+    <T> List<T> runQuery(String query, BeanPropertyRowMapper<T> beanPropertyRowMapper) {
         return jdbcTemplate.query(query, beanPropertyRowMapper);
+    }
+
+    public void executeQuery(String query) {
+        jdbcTemplate.execute(query);
     }
 
     public int updateQuery(String query) {
