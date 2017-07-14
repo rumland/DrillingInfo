@@ -1,7 +1,10 @@
 package com.saresource.drillinginfo.directaccess;
 
+import com.saresource.drillinginfo.directaccess.pojo.v1.ProducingEntityStats;
 import com.saresource.drillinginfo.directaccess.pojo.v1.ProductionHeader;
 import com.saresource.drillinginfo.directaccess.pojo.v1.RigAnalytics;
+import com.saresource.drillinginfo.directaccess.pojo.v1.Token;
+import org.apache.commons.lang3.time.StopWatch;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -16,6 +19,28 @@ public class DrillingInfoDirectAccess {
             baseUrl, "producing-entities?state_province=%s&format=json&page=%s&pagesize=%s&current_producing_status=ACTIVE");
     private final String rigAnalyticsUrlFormat = String.format("%s/%s",
             baseUrl, "rig-jobs?state=%s&format=json&page=%s&pagesize=%s");
+
+    Token getToken() throws Exception {
+        return (new GetTokenPage()).call();
+    }
+
+    List<ProducingEntityStats> getAllProducingEntityStats() throws Exception {
+        return new GetBulkProducingEntityStatsPage().call();
+    }
+
+    public List<ProducingEntityStats> getProducingEntityStats() {
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
+        List<ProducingEntityStats> stats;
+        try {
+            stats = (new GetBulkProducingEntityStatsPage()).call();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        System.out.println("Getting " + stats.size() + " stats took: " + stopWatch);
+
+        return stats;
+    }
 
     /**
      * Get production headers for state or providence.

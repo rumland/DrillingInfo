@@ -4,6 +4,7 @@ import com.amazonaws.regions.Regions;
 import com.saresource.aws.AwsRedshiftDatabaseIO;
 import com.saresource.aws.AwsS3IO;
 import com.saresource.drillinginfo.directaccess.DrillingInfoDirectAccess;
+import com.saresource.drillinginfo.directaccess.pojo.v1.ProducingEntityStats;
 import com.saresource.drillinginfo.directaccess.pojo.v1.ProductionHeader;
 import com.saresource.drillinginfo.directaccess.pojo.v1.RigAnalytics;
 import org.apache.commons.codec.Charsets;
@@ -70,20 +71,28 @@ public class AppIT {
     public void drillingInfoLoadedIntoS3ThenRedshiftTest() {
         processProductionHeaders();
         processRigAnalytics();
+        processProducingEntityStats();
     }
 
     private void processProductionHeaders() {
         List<ProductionHeader> headers = getDrillingInfoProductionHeaders();
-        File file = writeProductionHeadersToFile("headersPipeDelimited", headers);
+        File file = writeProductionHeadersToFile(headers);
         copyFileToAwsS3(file);
         copyAwsS3FileToRedshift("production_headers", file.getName());
     }
 
     private void processRigAnalytics() {
         List<RigAnalytics> analytics = getDrillingInfoRigAnalytics();
-        File file = writeRigAnalyticsToFile("analyticsPipeDelimited", analytics);
+        File file = writeRigAnalyticsToFile(analytics);
         copyFileToAwsS3(file);
         copyAwsS3FileToRedshift("rig_analytics", file.getName());
+    }
+
+    private void processProducingEntityStats() {
+        List<ProducingEntityStats> stats = diDa.getProducingEntityStats();
+        File file = writeProducingEntityStatsToFile(stats);
+        copyFileToAwsS3(file);
+        copyAwsS3FileToRedshift("producing_entity_stats", file.getName());
     }
 
     private List<ProductionHeader> getDrillingInfoProductionHeaders() {
@@ -104,13 +113,13 @@ public class AppIT {
         return analytics;
     }
 
-    private File writeProductionHeadersToFile(String prefix, List<ProductionHeader> headers) {
+    private File writeProductionHeadersToFile(List<ProductionHeader> headers) {
         StopWatch fileStopWatch = new StopWatch();
         fileStopWatch.reset();
         fileStopWatch.start();
         Path path;
         try {
-            path = Files.createTempFile(prefix, ".txt");
+            path = Files.createTempFile("headersPipeDelimited", ".txt");
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -147,13 +156,57 @@ public class AppIT {
         return file;
     }
 
-    private File writeRigAnalyticsToFile(String prefix, List<RigAnalytics> analytics) {
+    //TODO ru: Can this and other write functions be generalized?
+    private File writeProducingEntityStatsToFile(List<ProducingEntityStats> stats) {
         StopWatch fileStopWatch = new StopWatch();
         fileStopWatch.reset();
         fileStopWatch.start();
         Path path;
         try {
-            path = Files.createTempFile(prefix, ".txt");
+            path = Files.createTempFile("producingEntityStatsPipeDelimited", ".txt");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        File file = path.toFile();
+        FileWriter fr = null;
+        BufferedWriter br = null;
+        try {
+            fr = new FileWriter(file);
+            br = new BufferedWriter(fr);
+            for (ProducingEntityStats stat : stats) {
+                String dataWithNewLine = stat.toString() + System.lineSeparator();
+                try {
+                    br.write(dataWithNewLine);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (br != null) {
+                    br.close();
+                }
+                if (fr != null) {
+                    fr.close();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        fileStopWatch.stop();
+        System.out.println("Creating temporary data file took: " + fileStopWatch);
+        return file;
+    }
+
+    private File writeRigAnalyticsToFile(List<RigAnalytics> analytics) {
+        StopWatch fileStopWatch = new StopWatch();
+        fileStopWatch.reset();
+        fileStopWatch.start();
+        Path path;
+        try {
+            path = Files.createTempFile("analyticsPipeDelimited", ".txt");
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
