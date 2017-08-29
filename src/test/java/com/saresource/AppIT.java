@@ -56,18 +56,22 @@ public class AppIT {
 
     @Test
     public void copyS3DataIntoRedshiftTest() {
-        String query = "copy production_headers from " +
-                "'s3://sa-resources-s3-bucket/drilling-info/load' iam_role " +
-                "'arn:aws:iam::673800128558:role/s3-to-redshift'";
+        dropAndCreateDatabaseTables();
 
-        StopWatch stopWatch = new StopWatch();
-        stopWatch.start();
+        String inputFileName = "production-entities.json";
+        final File file = new File(this.getClass().getResource(inputFileName).getPath());
+        copyFileToAwsS3(file);
+
+        String query = String.format("copy production_headers from " +
+                "'s3://sa-resources-s3-bucket/drilling-info/load/%s' iam_role " +
+                "'arn:aws:iam::673800128558:role/s3-to-redshift'", inputFileName);
         int updateQuery = dbIo.updateQuery(query);
-        stopWatch.stop();
-        System.out.println("Copy took: " + stopWatch);
         System.out.println("Query result: " + updateQuery);
     }
 
+    /**
+     * Grand-daddy test that really represents entire project. Always keep this test working!!!
+     */
     @Test
     public void drillingInfoLoadedIntoS3ThenRedshiftTest() {
         dropAndCreateDatabaseTables();

@@ -34,19 +34,29 @@ public class GetProductionHeadersPage implements Callable<Collection<ProductionH
 
     @Override
     public Collection<ProductionHeader> call() throws Exception {
-        return getProductionHeadersPage(url);
+        return getProductionHeadersPage();
     }
 
-    private Collection<ProductionHeader> getProductionHeadersPage(String url) {
+    private Collection<ProductionHeader> getProductionHeadersPage() {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
+        String json = executeRestQuery();
+        Collection<ProductionHeader> productionHeaders = parseJson(json);
+        stopWatch.stop();
+
+        return productionHeaders;
+    }
+
+    String executeRestQuery() {
+        StopWatch httpGetStopWatch = new StopWatch();
+        httpGetStopWatch.start();
+        HttpGet get = new HttpGet(url);
+        get.setHeader("X-API-KEY", API_KEY);
+        get.setHeader("Connection", "close");
+        HttpResponse response;
+        String json;
         try {
-            StopWatch httpGetStopWatch = new StopWatch();
-            httpGetStopWatch.start();
-            HttpGet get = new HttpGet(url);
-            get.setHeader("X-API-KEY", API_KEY);
-            get.setHeader("Connection", "close");
-            HttpResponse response = client.execute(get);
+            response = client.execute(get);
             httpGetStopWatch.stop();
             int statusCode = response.getStatusLine().getStatusCode();
             if (statusCode != HttpStatus.SC_OK) {
@@ -59,22 +69,20 @@ public class GetProductionHeadersPage implements Callable<Collection<ProductionH
                         throw new RuntimeException(e);
                     }
                     System.out.println("Trying 1 more time after waiting 750ms...");
-                    return getProductionHeadersPage(url);
+                    return executeRestQuery();
                 }
                 throw new RuntimeException(message);
             }
 
             HttpEntity entity = response.getEntity();
-            String json = EntityUtils.toString(entity);
+            json = EntityUtils.toString(entity);
             get.releaseConnection();
             EntityUtils.consume(entity);
-            Collection<ProductionHeader> productionHeaders = parseJson(json);
-            stopWatch.stop();
-
-            return productionHeaders;
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+
+        return json;
     }
 
     Collection<ProductionHeader> parseJson(String json) {
