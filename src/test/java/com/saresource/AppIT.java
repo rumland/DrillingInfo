@@ -29,6 +29,9 @@ import java.util.concurrent.*;
 public class AppIT {
     private final DrillingInfoDirectAccess diDa = new DrillingInfoDirectAccess();
     private final AwsRedshiftDatabaseIO dbIo = AwsRedshiftDatabaseIO.build();
+    private final AwsS3IO s3IO = new AwsS3IO(Regions.US_EAST_1);
+    private final String bucketName = "sa-resources-s3-bucket/drilling-info/load";
+    private final String iamRole = "arn:aws:iam::673800128558:role/s3-to-redshift";
 
     @Test
     public void createS3ContentToCopyTest() throws IOException {
@@ -47,11 +50,7 @@ public class AppIT {
             }
         });
 
-        AwsS3IO s3IO = new AwsS3IO(Regions.US_EAST_1);
-        final String existingBucketName = "sa-resources-s3-bucket/drilling-info/load";
-        final String newFileName = file.getName();
-
-        s3IO.upload(existingBucketName, newFileName, file);
+        s3IO.copyFileToAwsS3(file, bucketName);
     }
 
     @Test
@@ -60,7 +59,7 @@ public class AppIT {
 
         String inputFileName = "production-entities.json";
         final File file = new File(this.getClass().getResource(inputFileName).getPath());
-        copyFileToAwsS3(file);
+        s3IO.copyFileToAwsS3(file, bucketName);
 
         String query = String.format("copy production_headers from " +
                 "'s3://sa-resources-s3-bucket/drilling-info/load/%s' iam_role " +
@@ -412,22 +411,22 @@ public class AppIT {
     private void processProductionHeaders() {
         List<ProductionHeader> headers = getDrillingInfoProductionHeaders();
         File file = writeProductionHeadersToFile(headers);
-        copyFileToAwsS3(file);
-        copyAwsS3FileToRedshift("production_headers", file.getName());
+        s3IO.copyFileToAwsS3(file, bucketName);
+        dbIo.copyAwsS3FileToRedshift("production_headers", bucketName, file.getName(), iamRole);
     }
 
     private void processRigAnalytics() {
         List<RigAnalytics> analytics = getDrillingInfoRigAnalytics();
         File file = writeRigAnalyticsToFile(analytics);
-        copyFileToAwsS3(file);
-        copyAwsS3FileToRedshift("rig_analytics", file.getName());
+        s3IO.copyFileToAwsS3(file, bucketName);
+        dbIo.copyAwsS3FileToRedshift("rig_analytics", bucketName, file.getName(), iamRole);
     }
 
     private void processProducingEntityStats() {
         List<ProducingEntityStats> stats = diDa.getProducingEntityStats();
         File file = writeProducingEntityStatsToFile(stats);
-        copyFileToAwsS3(file);
-        copyAwsS3FileToRedshift("producing_entity_stats", file.getName());
+        s3IO.copyFileToAwsS3(file, bucketName);
+        dbIo.copyAwsS3FileToRedshift("producing_entity_stats", bucketName, file.getName(), iamRole);
     }
 
     private List<ProductionHeader> getDrillingInfoProductionHeaders() {
@@ -576,32 +575,6 @@ public class AppIT {
         fileStopWatch.stop();
         System.out.println("Creating temporary data file took: " + fileStopWatch);
         return file;
-    }
-
-    private void copyFileToAwsS3(File file) {
-        StopWatch s3StopWatch = new StopWatch();
-        s3StopWatch.reset();
-        s3StopWatch.start();
-        AwsS3IO s3IO = new AwsS3IO(Regions.US_EAST_1);
-        final String existingBucketName = "sa-resources-s3-bucket/drilling-info/load";
-        final String newFileName = file.getName();
-        s3IO.upload(existingBucketName, newFileName, file);
-        s3StopWatch.stop();
-        System.out.println("Uploading temporary data file to S3 took: " + s3StopWatch);
-    }
-
-    private void copyAwsS3FileToRedshift(String tableName, String fileName) {
-        String query = String.format("copy %s from 's3://sa-resources-s3-bucket/drilling-info/load/%s' " +
-                "iam_role 'arn:aws:iam::673800128558:role/s3-to-redshift'", tableName, fileName);
-
-        StopWatch stopWatch = new StopWatch();
-        stopWatch.reset();
-        stopWatch.start();
-        System.out.println("Query: " + query);
-        int updateQuery = dbIo.updateQuery(query);
-        stopWatch.stop();
-        System.out.println("Copy from S3 to Redshift took: " + stopWatch);
-        System.out.println("Copy query result: " + updateQuery);
     }
 
     @Test

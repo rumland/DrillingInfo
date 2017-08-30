@@ -37,6 +37,13 @@ public class AwsRedshiftDatabaseIO {
         return new AwsRedshiftDatabaseIO(dbUrl, masterUserName, masterUserPassword);
     }
 
+    public int copyAwsS3FileToRedshift(String redshiftTableName, String s3BucketName, String s3FileName, String iamRole) {
+        String query = String.format("copy %s from 's3://%s/%s' iam_role '%s'",
+                redshiftTableName, s3BucketName, s3FileName, iamRole);
+
+        return updateQuery(query);
+    }
+
     private AwsRedshiftDatabaseIO(String dbUrl, String masterUserName, String masterUserPassword) {
         try {
             Class.forName("com.amazon.redshift.jdbc42.Driver");

@@ -5,6 +5,7 @@ import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.*;
+import org.apache.commons.lang3.time.StopWatch;
 import org.springframework.util.StreamUtils;
 
 import java.io.File;
@@ -19,6 +20,15 @@ public class AwsS3IO {
         s3Client = AmazonS3ClientBuilder.standard()
                 .withCredentials(new EnvironmentVariableCredentialsProvider())
                 .withRegion(region).build();
+    }
+
+    public void copyFileToAwsS3(File file, String bucketName) {
+        StopWatch s3StopWatch = new StopWatch();
+        s3StopWatch.reset();
+        s3StopWatch.start();
+        final String newFileName = file.getName();
+        upload(bucketName, newFileName, file);
+        s3StopWatch.stop();
     }
 
     String download(String bucketName, String fileName) {
@@ -36,7 +46,7 @@ public class AwsS3IO {
         return data;
     }
 
-    public void upload(String bucketName, String newFileName, File file) {
+    void upload(String bucketName, String newFileName, File file) {
         s3Client.putObject(new PutObjectRequest(bucketName, newFileName, file));
     }
 
