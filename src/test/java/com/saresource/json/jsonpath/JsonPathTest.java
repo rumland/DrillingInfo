@@ -1,4 +1,4 @@
-package com.saresource.jsonpath;
+package com.saresource.json.jsonpath;
 
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
