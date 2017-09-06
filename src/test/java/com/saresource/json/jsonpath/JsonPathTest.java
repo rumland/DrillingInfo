@@ -27,4 +27,10 @@ public class JsonPathTest {
         assertTrue(read.contains("18-01V"));
         assertTrue(read.contains("14-2"));
     }
+
+    @Test
+    public void arrayLengthTest() {
+        int length = context.read("$.length()");
+        assertEquals(3, length);
+    }
 }

@@ -1,7 +1,6 @@
 package com.saresource.drillinginfo.directaccess;
 
 import com.saresource.drillinginfo.directaccess.pojo.v1.ProducingEntityStats;
-import com.saresource.drillinginfo.directaccess.pojo.v1.ProductionHeader;
 import com.saresource.drillinginfo.directaccess.pojo.v1.RigAnalytics;
 import com.saresource.drillinginfo.directaccess.pojo.v1.Token;
 import org.apache.commons.lang3.time.StopWatch;
@@ -48,15 +47,15 @@ public class DrillingInfoDirectAccess {
      * @param stateOrProvince to get production headers for
      * @return all production headers for state or province
      */
-    public Collection<ProductionHeader> getProductionHeaders(String stateOrProvince) {
-        Collection<ProductionHeader> allProductionHeaders = new ArrayList<>();
+    public Collection<DrillingInfoData> getProductionHeaders(String stateOrProvince) {
+        Collection<DrillingInfoData> allProductionHeaders = new ArrayList<>();
 
         boolean keepGoing = true;
         int page = 1;
         int batchSize = 5;
         int PAGE_SIZE = 10000;
         while (keepGoing) {
-            List<Callable<Collection<ProductionHeader>>> callables = new ArrayList<>();
+            List<Callable<DrillingInfoData>> callables = new ArrayList<>();
             for (int cnt = 1; cnt <= batchSize; ++cnt) {
                 String url = String.format(productionHeaderUrlFormat, stateOrProvince, page, PAGE_SIZE);
                 callables.add(new GetProductionHeadersPage(url));
@@ -65,7 +64,6 @@ public class DrillingInfoDirectAccess {
 
             try {
                 ExecutorService executor = Executors.newFixedThreadPool(batchSize);
-                Collection<ProductionHeader> newProductionHeaders = new ArrayList<>();
                 executor.invokeAll(callables)
                         .stream()
                         .map(future ->
@@ -75,12 +73,13 @@ public class DrillingInfoDirectAccess {
                             } catch (Exception e) {
                                 throw new RuntimeException(e);
                             }
-                        }).forEach(newProductionHeaders::addAll);
-                allProductionHeaders.addAll(newProductionHeaders);
+                        }).forEach(allProductionHeaders::add);
 
-                if (newProductionHeaders.size() != PAGE_SIZE * batchSize) {
-                    keepGoing = false;
-                }
+                //TODO ru: determine when full page size _not_ returned...
+                keepGoing = false;
+//                if (newProductionHeaders.size() != PAGE_SIZE * batchSize) {
+//                    keepGoing = false;
+//                }
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }

@@ -37,11 +37,17 @@ public class AwsRedshiftDatabaseIO {
         return new AwsRedshiftDatabaseIO(dbUrl, masterUserName, masterUserPassword);
     }
 
-    public int copyAwsS3FileToRedshift(String redshiftTableName, String s3BucketName, String s3FileName, String iamRole) {
-        String query = String.format("copy %s from 's3://%s/%s' iam_role '%s'",
-                redshiftTableName, s3BucketName, s3FileName, iamRole);
+    public void copyAwsS3FileToRedshift(String redshiftTableName, String s3BucketName, String s3FileName, String iamRole) {
+        //TODO ru: do we want to return an int?
+        copyAwsS3FileToRedshift(redshiftTableName, s3BucketName, s3FileName, iamRole, "");
+    }
 
-        return updateQuery(query);
+    //TODO ru: Do we want to return an int?
+    public void copyAwsS3FileToRedshift(String redshiftTableName, String s3BucketName, String s3FileName, String iamRole, String options) {
+        String query = String.format("copy %s from 's3://%s/%s' iam_role '%s' %s",
+                redshiftTableName, s3BucketName, s3FileName, iamRole, options);
+
+        updateQuery(query);
     }
 
     private AwsRedshiftDatabaseIO(String dbUrl, String masterUserName, String masterUserPassword) {

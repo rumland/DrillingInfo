@@ -1,8 +1,5 @@
 package com.saresource.drillinginfo.directaccess;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.saresource.drillinginfo.directaccess.pojo.v1.ProductionHeader;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -13,38 +10,32 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
-public class GetProductionHeadersPage implements Callable<Collection<ProductionHeader>> {
+public class GetProductionHeadersPage implements Callable<DrillingInfoData> {
     private final String url;
     private final String API_KEY;
     private final HttpClient client;
-    private final ObjectMapper mapper = new ObjectMapper();
 
     GetProductionHeadersPage(String url) {
         this.url = url;
         this.API_KEY = System.getenv("DRILLING_INFO_API_KEY");
         this.client = HttpClientBuilder.create().build();
-        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     }
 
     @Override
-    public Collection<ProductionHeader> call() throws Exception {
+    public DrillingInfoData call() throws Exception {
         return getProductionHeadersPage();
     }
 
-    private Collection<ProductionHeader> getProductionHeadersPage() {
+    private DrillingInfoData getProductionHeadersPage() {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
         String json = executeRestQuery();
-        Collection<ProductionHeader> productionHeaders = parseJson(json);
         stopWatch.stop();
 
-        return productionHeaders;
+        return new DrillingInfoData(DrillingInfoDataFormat.JSON, json);
     }
 
     String executeRestQuery() {
@@ -83,18 +74,5 @@ public class GetProductionHeadersPage implements Callable<Collection<ProductionH
         }
 
         return json;
-    }
-
-    Collection<ProductionHeader> parseJson(String json) {
-        try {
-            StopWatch stopWatch = new StopWatch();
-            stopWatch.start();
-            ProductionHeader[] productionHeaders = mapper.readValue(json, ProductionHeader[].class);
-            List<ProductionHeader> headers = Arrays.asList(productionHeaders);
-            stopWatch.stop();
-            return headers;
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
     }
 }

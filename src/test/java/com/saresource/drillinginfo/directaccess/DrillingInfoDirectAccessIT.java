@@ -1,7 +1,6 @@
 package com.saresource.drillinginfo.directaccess;
 
 import com.saresource.drillinginfo.directaccess.pojo.v1.ProducingEntityStats;
-import com.saresource.drillinginfo.directaccess.pojo.v1.ProductionHeader;
 import com.saresource.drillinginfo.directaccess.pojo.v1.RigAnalytics;
 import com.saresource.drillinginfo.directaccess.pojo.v1.Token;
 import org.junit.Assert;
@@ -49,7 +48,7 @@ public class DrillingInfoDirectAccessIT {
     @Test
     public void getCoProductionHeadersTest() {
         DrillingInfoDirectAccess diDa = new DrillingInfoDirectAccess();
-        Collection<ProductionHeader> productionHeaders = diDa.getProductionHeaders("CO");
+        Collection<DrillingInfoData> productionHeaders = diDa.getProductionHeaders("CO");
         System.out.println("Production header count: " + productionHeaders.size());
         Assert.assertTrue("Expected greater than 0 production headers for CO",
                 productionHeaders.size() > 0);
@@ -58,7 +57,7 @@ public class DrillingInfoDirectAccessIT {
     @Test
     public void getCaProductionHeadersTest() {
         DrillingInfoDirectAccess diDa = new DrillingInfoDirectAccess();
-        Collection<ProductionHeader> productionHeaders = diDa.getProductionHeaders("CA");
+        Collection<DrillingInfoData> productionHeaders = diDa.getProductionHeaders("CA");
         System.out.println("Production header count: " + productionHeaders.size());
         Assert.assertTrue("Expected greater than 0 production headers for CA", productionHeaders.size() > 0);
     }

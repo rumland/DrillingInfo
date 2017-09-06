@@ -7,21 +7,22 @@ import org.json.JSONArray;
 import java.io.IOException;
 import java.io.InputStream;
 
-class AwsJsonArray {
-    private final InputStream inputStream;
+public class AwsJsonArray {
+    private final String json;
 
-    AwsJsonArray(InputStream inputStream) {
-        this.inputStream = inputStream;
+    public AwsJsonArray(String json) {
+        this.json = json;
     }
 
-    String getCsvString() {
-        String json;
+    public AwsJsonArray(InputStream inputStream) {
         try {
             json = IOUtils.toString(inputStream);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
 
+    public String getCsvString() {
         JSONArray array = new JSONArray(json);
         return CDL.toString(array);
     }
